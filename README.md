@@ -98,7 +98,7 @@ src/
     and `FlatList` windowing (`initialNumToRender`, `windowSize`, `removeClippedSubviews`).
   - The mock API returns **paged** responses so large datasets are never loaded at once.
 
-- **Styling:** NativeWind (Tailwind) with a shared light/dark token set.
+- **Styling:** NativeWind (Tailwind).
 
 ---
 
