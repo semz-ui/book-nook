@@ -4,8 +4,7 @@ A React Native (Expo) app for a small independent bookstore. Customers can brows
 and search the catalog, view book details, manage a shopping cart, and check out —
 all backed by a **mock API** with simulated latency and failures.
 
-Built for the Bumpa Mobile Engineer assessment. See [`plan.md`](./plan.md) for the
-phased build breakdown.
+Built for the Bumpa Mobile Engineer assessment
 
 ---
 
