@@ -1,98 +1,87 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+/**
+ * VIEW — Browse & search screen.
+ * Thin: delegates all state/logic to the useBookList ViewModel.
+ */
+
+import { useCallback } from 'react';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { SearchBar } from '@/components/ui/search-bar';
+import { BookListSkeleton } from '@/components/ui/skeleton';
+import { BookCard } from '@/features/books/components/book-card';
+import type { Book } from '@/features/books/models/book';
+import { useBookList } from '@/features/books/viewmodels/use-book-list';
+import { useTheme } from '@/hooks/use-theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function BrowseScreen() {
+  const { items, query, setQuery, isLoading, isLoadingMore, isError, error, loadMore, retry } =
+    useBookList();
+  const theme = useTheme();
+
+  const renderItem = useCallback(({ item }: { item: Book }) => <BookCard book={item} />, []);
+  const keyExtractor = useCallback((item: Book) => item.id, []);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <ThemedView className="flex-1">
+      <SafeAreaView edges={['bottom']} className="flex-1">
+        <View className="px-four pb-two pt-three">
+          <SearchBar value={query} onChangeText={setQuery} placeholder="Search by title or author" />
+        </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+        {isLoading ? (
+          <BookListSkeleton />
+        ) : isError ? (
+          <View className="flex-1 items-center justify-center gap-three px-four">
+            <ThemedText type="subtitle" className="text-[40px]">
+              😕
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" className="text-center">
+              {error ?? 'Unable to load books.'}
+            </ThemedText>
+            <Pressable
+              onPress={retry}
+              className="rounded-full bg-primary px-four py-two active:opacity-70">
+              <ThemedText themeColor="primaryForeground" type="smallBold">
+                Try again
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <FlatList
+            data={items}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            contentContainerClassName="gap-three px-four pb-six pt-two"
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.4}
+            showsVerticalScrollIndicator={false}
+            // Perf tuning for large lists.
+            initialNumToRender={8}
+            windowSize={11}
+            removeClippedSubviews
+            ListEmptyComponent={
+              <View className="items-center gap-two pt-six">
+                <ThemedText type="subtitle" className="text-[40px]">
+                  🔍
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" className="text-center">
+                  No books match “{query}”.
+                </ThemedText>
+              </View>
+            }
+            ListFooterComponent={
+              isLoadingMore ? (
+                <View className="py-three">
+                  <ActivityIndicator color={theme.primary} />
+                </View>
+              ) : null
+            }
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
